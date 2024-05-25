@@ -1,4 +1,5 @@
 from dataset import concat_clean_text, load_hf_dataset
+from tokenizer import Tokenizer
 
 
 def main():
@@ -14,7 +15,18 @@ def main():
 
     # concatenate and clean text leaving only latin characters
     dataset = concat_clean_text(hf_dataset)
-    print(sorted(list(set(dataset))))
+
+    # train tokenizer with the entire dataset
+    tokenizer = Tokenizer()
+    tokenizer.train(dataset)
+    print(f"Vocabulary size: {tokenizer.vocabulary_size}")
+    print(f"Vocabulary mapping: {tokenizer.str_to_int}")
+
+    # test tokenizer with a slice of the dataset
+    text = dataset[:100]
+    print(f"Text: {text}")
+    tokens = tokenizer.tokenize(text)
+    print(f"Tokens: {tokens}")
 
 
 if __name__ == "__main__":
