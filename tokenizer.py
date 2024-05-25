@@ -5,6 +5,7 @@ class Tokenizer:
     def __init__(self):
         self.str_to_int = {}
         self.int_to_str = {}
+        self.vocabulary = []
         self.vocabulary_size = 0
 
     def train(self, text: List[str]) -> None:

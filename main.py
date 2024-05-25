@@ -1,6 +1,6 @@
-import torch
 import logging
-from tokenizer import Tokenizer
+
+import torch
 
 from dataset import (
     SimpleDataLoader,
@@ -8,7 +8,8 @@ from dataset import (
     load_hf_dataset,
     split_dataset,
 )
-
+from models import BigramLanguageModel
+from tokenizer import Tokenizer
 
 logging.basicConfig(level=logging.INFO)
 
@@ -76,6 +77,14 @@ def main():
     x_batch, y_batch = train_dl.get_batch()
     logging.info(f"X batch: {x_batch}")
     logging.info(f"Y batch: {y_batch}")
+
+    bigram = BigramLanguageModel(tokenizer.vocabulary_size)
+    logits, loss = bigram(x_batch, y_batch)
+    logging.info(logits.shape)
+    # expected loss with no training is
+    # -log(1 / vocab_size)
+    # -log(1 / 158) = 5.06259503303
+    logging.info(loss)
 
 
 if __name__ == "__main__":
