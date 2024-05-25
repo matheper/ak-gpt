@@ -90,6 +90,25 @@ def main():
     new_tokens = bigram.generate(idx, max_new_tokens=100)[0].tolist()
     logging.info(f"Generated text: {tokenizer.decode(new_tokens)}")
 
+    lr = 1e-3
+    optimizer = torch.optim.AdamW(bigram.parameters(), lr=lr)
+
+    steps = 1000
+
+    for step in range(steps):
+        x_batch, y_batch = train_dl.get_batch()
+        logits, loss = bigram(x_batch, y_batch)
+        optimizer.zero_grad(set_to_none=True)
+        loss.backward()
+        optimizer.step()
+        if step % 100 == 0:
+            logging.info(f"Step: {step}, Loss: {loss.item()}")
+    logging.info(f"Final loss: {loss.item()}")
+
+    idx = torch.zeros((1, 1), dtype=torch.long)
+    new_tokens = bigram.generate(idx, max_new_tokens=100)[0].tolist()
+    print(tokenizer.decode(new_tokens))
+
 
 if __name__ == "__main__":
     main()
