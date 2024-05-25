@@ -39,3 +39,16 @@ class Tokenizer:
         if len(encoded_tokens) == 1:
             encoded_tokens = encoded_tokens[0]
         return encoded_tokens
+
+    def decode(self, tokens: List[int]) -> str:
+        """Decode a list of integers into a string."""
+        if isinstance(tokens, int):
+            tokens = [tokens]
+        decoded_text = []
+        try:
+            for token in tokens:
+                text = self.int_to_str[token]
+                decoded_text.append(text)
+        except KeyError:
+            raise ValueError(f"Unknown encoded token: {token}")
+        return "".join(decoded_text)

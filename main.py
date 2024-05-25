@@ -29,6 +29,8 @@ def main():
     print(f"Tokens: {tokens}")
     encoded = tokenizer.encode(text)
     print(f"Encoded: {encoded}")
+    decoded = tokenizer.decode(encoded)
+    print(f"Decoded: {decoded}")
 
 
 if __name__ == "__main__":
