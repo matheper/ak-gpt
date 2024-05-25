@@ -69,9 +69,6 @@ class SimpleDataLoader:
         """Initialize a DataLoader for next token prediction.
         Batch size is the number of independent sequences of text.
         Block size is the number of tokens in each sequence of text.
-        X, Y pairs are created by shifting the input by one token, ex.:
-        dataset = [0, 1, 2, 3, 4], block_size = 2, batch_size = 2
-        X = [[0, 1], [1, 2]], Y = [[1, 2], [2, 3]]
         """
         self.dataset = dataset
         self.batch_size = batch_size
@@ -79,6 +76,12 @@ class SimpleDataLoader:
         self.generator = generator
 
     def get_batch(self):
+        """Get a batch of data for next token prediction.
+        X, Y pairs are created by shifting the data by one token.
+        Ex.: dataset = [0, 1, 2, 3, 4], batch_size = 2, block_size = 2
+        X = [[0, 1], [1, 2]]
+        Y = [[1, 2], [2, 3]]
+        """
         idx = torch.randint(
             len(self.dataset) - self.block_size,
             (self.batch_size,),

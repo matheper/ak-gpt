@@ -69,6 +69,11 @@ def main():
         generator=val_gen,
     )
 
+    x_batch, y_batch = train_dl.get_batch()
+    print(f"X batch: {x_batch}")
+    print(f"Y batch: {y_batch}")
+    
+
 
 if __name__ == "__main__":
     main()
