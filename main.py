@@ -80,11 +80,15 @@ def main():
 
     bigram = BigramLanguageModel(tokenizer.vocabulary_size)
     logits, loss = bigram(x_batch, y_batch)
-    logging.info(logits.shape)
-    # expected loss with no training is
-    # -log(1 / vocab_size)
+    logging.info(f"Logits shape: {logits.shape}")
+    # expected loss with no training is -log(1 / vocab_size)
     # -log(1 / 158) = 5.06259503303
-    logging.info(loss)
+    logging.info(f"Loss: {loss}")
+
+    # Generate some text from the bigram model. Start with a single token.
+    idx = torch.zeros((1, 1), dtype=torch.long)
+    new_tokens = bigram.generate(idx, max_new_tokens=100)[0].tolist()
+    logging.info(f"Generated text: {tokenizer.decode(new_tokens)}")
 
 
 if __name__ == "__main__":
