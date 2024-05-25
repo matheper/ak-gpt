@@ -20,13 +20,15 @@ def main():
     tokenizer = Tokenizer()
     tokenizer.train(dataset)
     print(f"Vocabulary size: {tokenizer.vocabulary_size}")
-    print(f"Vocabulary mapping: {tokenizer.str_to_int}")
+    print(f"Vocabulary mapping:\n{tokenizer.str_to_int}\n")
 
     # test tokenizer with a slice of the dataset
     text = dataset[:100]
     print(f"Text: {text}")
     tokens = tokenizer.tokenize(text)
     print(f"Tokens: {tokens}")
+    encoded = tokenizer.encode(text)
+    print(f"Encoded: {encoded}")
 
 
 if __name__ == "__main__":
