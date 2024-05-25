@@ -24,7 +24,7 @@ class Tokenizer:
         tokens = []
         for char in text:
             if char not in self.str_to_int:
-                raise ValueError(f"Token desconhecido: {char}")
+                raise ValueError(f"Unknown token: {char}")
             tokens.append(char)
         return tokens
 
