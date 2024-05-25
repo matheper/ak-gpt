@@ -1,5 +1,7 @@
 import pytest
+import torch
 
+from dataset import SimpleDataLoader, split_dataset
 from tokenizer import Tokenizer
 
 
@@ -43,3 +45,32 @@ def test_decode_unknown_token(tokenizer):
 
 def test_decode_empty_list(tokenizer):
     assert tokenizer.decode([]) == ""
+
+
+def test_split_dataset():
+    dataset = list(range(10))
+
+    train, test = split_dataset(dataset)
+    assert train == [0, 1, 2, 3, 4, 5, 6, 7, 8]
+    assert test == [9]
+
+    train, test = split_dataset(dataset, split_ratio=0.7)
+    assert train == [0, 1, 2, 3, 4, 5, 6]
+    assert test == [7, 8, 9]
+
+
+def test_get_batch():
+    dataset = torch.arange(10)
+    batch_size = 2
+    block_size = 3
+    generator = torch.Generator()
+    generator.manual_seed(42)
+
+    dataloader = SimpleDataLoader(dataset, batch_size, block_size, generator)
+    x, y = dataloader.get_batch()
+
+    expected_x = torch.tensor([[1, 2, 3], [2, 3, 4]])
+    expected_y = torch.tensor([[2, 3, 4], [3, 4, 5]])
+
+    assert torch.all(torch.eq(x, expected_x))
+    assert torch.all(torch.eq(y, expected_y))

@@ -1,7 +1,8 @@
 import re
 from functools import partial
-from typing import Optional
+from typing import Any, Optional, Tuple
 
+import torch
 from datasets import Dataset, load_dataset
 
 
@@ -43,7 +44,48 @@ def latin_clean_text(text: str) -> str:
     return cleaned_text
 
 
-def concat_clean_text(dataset: Dataset) -> str:
+def concat_and_clean_text(dataset: Dataset) -> str:
     """Concatenate and clean text from a Hugging Face Dataset."""
     concatenated_text = "\n".join([d["text"] for d in dataset])
     return latin_clean_text(concatenated_text)
+
+
+def split_dataset(
+    dataset: torch.Tensor, split_ratio: float = 0.9
+) -> Tuple[torch.Tensor, torch.Tensor]:
+    """Split a dataset into two parts given a split ratio. Default is 90/10."""
+    split_idx = int(len(dataset) * split_ratio)
+    return dataset[:split_idx], dataset[split_idx:]
+
+
+class SimpleDataLoader:
+    def __init__(
+        self,
+        dataset: torch.Tensor,
+        batch_size: int,
+        block_size: int,
+        generator: torch.Generator = None,
+    ):
+        """Initialize a DataLoader for next token prediction.
+        Batch size is the number of independent sequences of text.
+        Block size is the number of tokens in each sequence of text.
+        X, Y pairs are created by shifting the input by one token, ex.:
+        dataset = [0, 1, 2, 3, 4], block_size = 2, batch_size = 2
+        X = [[0, 1], [1, 2]], Y = [[1, 2], [2, 3]]
+        """
+        self.dataset = dataset
+        self.batch_size = batch_size
+        self.block_size = block_size
+        self.generator = generator
+
+    def get_batch(self):
+        idx = torch.randint(
+            len(self.dataset) - self.block_size,
+            (self.batch_size,),
+            generator=self.generator,
+        )
+        x = torch.stack([self.dataset[i : i + self.block_size] for i in idx])
+        y = torch.stack(
+            [self.dataset[i + 1 : i + self.block_size + 1] for i in idx]
+        )
+        return x, y
