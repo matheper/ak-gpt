@@ -14,7 +14,39 @@ from tokenizer import Tokenizer
 logging.basicConfig(level=logging.INFO)
 
 
-def main(seed=42):
+@torch.no_grad()
+def estimate_loss(
+    model: torch.nn.Module,
+    dataloaders: dict[str, SimpleDataLoader],
+    eval_iters: int,
+) -> dict[str, float]:
+    """Estimate the loss of a model on a dict of {split: dataloader}.
+    The loss is estimated by averaging the loss over `eval_iters` batches.
+    """
+    out = {}
+    model.eval()
+    for split, dataloader in dataloaders.items():
+        losses = torch.zeros(eval_iters)
+        for k in range(eval_iters):
+            x_batch, y_batch = dataloader.get_batch()
+            logits, loss = model(x_batch, y_batch)
+            losses[k] = loss.item()
+        out[split] = losses.mean()
+    model.train()
+    return out
+
+
+def main():
+    # hyperparameters
+    seed = 42  # random seed for reproducibility
+    split_ratio = 0.9  # train/validation split ratio
+    batch_size = 4  # number of independent sequences processed in parallel
+    block_size = 8  # number of tokens in each sequence
+    learning_rate = 1e-2  # learning rate
+    train_iters = 5000  # number of training iterations
+    eval_interval = 100  # evaluate the model every 100 steps
+    eval_iters = 100  # number of iterations to estimate the loss
+
     torch.manual_seed(seed)
 
     # load a slice of wikipedia pt
@@ -52,26 +84,23 @@ def main(seed=42):
     logging.info(f"Data shape: {data.shape}")
 
     # split dataset into train and validation
-    split_ratio = 0.9
     train_data, val_data = split_dataset(data, split_ratio=split_ratio)
     logging.info(f"Train shape: {train_data.shape}")
     logging.info(f"Validation shape: {val_data.shape}")
 
-    batch_size = 4  # number of independent sequences processed in parallel
-    block_size = 8  # number of tokens in each sequence
-
-    train_dl = SimpleDataLoader(
+    dataloaders = dict()
+    dataloaders["train"] = SimpleDataLoader(
         train_data,
         batch_size=batch_size,
         block_size=block_size,
     )
-    val_dl = SimpleDataLoader(
+    dataloaders["validation"] = SimpleDataLoader(
         val_data,
         batch_size=batch_size,
         block_size=block_size,
     )
 
-    x_batch, y_batch = train_dl.get_batch()
+    x_batch, y_batch = dataloaders["train"].get_batch()
     logging.info(f"X batch: {x_batch}")
     logging.info(f"Y batch: {y_batch}")
 
@@ -87,20 +116,20 @@ def main(seed=42):
     new_tokens = bigram.generate(inputs, max_new_tokens=100)[0].tolist()
     logging.info(f"Generated text: {tokenizer.decode(new_tokens)}")
 
-    lr = 1e-2
-    optimizer = torch.optim.AdamW(bigram.parameters(), lr=lr)
+    optimizer = torch.optim.AdamW(bigram.parameters(), lr=learning_rate)
 
-    steps = 5000
-
-    for step in range(steps):
-        x_batch, y_batch = train_dl.get_batch()
+    for step in range(train_iters):
+        x_batch, y_batch = dataloaders["train"].get_batch()
         logits, loss = bigram(x_batch, y_batch)
         optimizer.zero_grad(set_to_none=True)
         loss.backward()
         optimizer.step()
-        if step % 100 == 0:
-            logging.info(f"Step: {step}, Loss: {loss.item()}")
-    logging.info(f"Final loss: {loss.item()}")
+        if step % eval_interval == 0:
+            losses = estimate_loss(bigram, dataloaders, eval_iters)
+            logging.info(
+                f"Step: {step:4d} Train Loss: {losses["train"]:.16f} "
+                f"Validation Loss: {losses["validation"]:.16f}"
+            )
 
     # Generate some text from the bigram model. Start with a single token "A".
     inputs = tokenizer(["A"], return_tensors="pt").reshape(1, 1)
