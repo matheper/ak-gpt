@@ -44,12 +44,13 @@ def main():
     batch_size = 4  # number of independent sequences processed in parallel
     block_size = 8  # number of tokens in each sequence
     learning_rate = 1e-2  # learning rate
-    train_iters = 10000  # number of training iterations
+    train_iters = 20000  # number of training iterations
     eval_interval = 100  # evaluate the model every 100 steps
     eval_iters = 100  # number of iterations to estimate the loss
     embed_size = 32  # embedding size for the transformer model
     num_att_blocks = 4  # number of attention blocks for the transformer model
     num_heads = 4  # number of attention heads for the transformer model
+    dropout = 0.2  # dropout rate for the transformer model
 
     torch.manual_seed(seed)
 
@@ -117,6 +118,7 @@ def main():
             block_size=block_size,
             num_att_blocks=num_att_blocks,
             num_heads=num_heads,
+            dropout=dropout,
         )
     else:
         raise ValueError(f"Unknown model: {model}")
@@ -161,3 +163,4 @@ if __name__ == "__main__":
 # Train Loss: 2.4278442859649658 Validation Loss: 2.4253225326538086 - Transformers 4 Multi Head
 # Train Loss: 2.4477648735046387 Validation Loss: 2.3981783390045166 - Transformers Multi Head + ff
 # Train Loss: 2.4489369392395020 Validation Loss: 2.3992874622344971 - Transformers Multi Head + ff + layernorm
+# Train Loss: 2.4482278823852539 Validation Loss: 2.4894003868103027 - Transformers Full
