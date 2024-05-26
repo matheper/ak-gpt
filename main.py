@@ -8,7 +8,7 @@ from dataset import (
     load_hf_dataset,
     split_dataset,
 )
-from models import BigramLanguageModel
+from models import BigramLanguageModel, TransformerModel
 from tokenizer import Tokenizer
 
 logging.basicConfig(level=logging.INFO)
@@ -40,12 +40,15 @@ def main():
     # hyperparameters
     seed = 42  # random seed for reproducibility
     split_ratio = 0.9  # train/validation split ratio
+    model = "transformer"  # model type: bigram or transformer
     batch_size = 4  # number of independent sequences processed in parallel
     block_size = 8  # number of tokens in each sequence
     learning_rate = 1e-2  # learning rate
     train_iters = 5000  # number of training iterations
     eval_interval = 100  # evaluate the model every 100 steps
     eval_iters = 100  # number of iterations to estimate the loss
+    embed_size = 32  # embedding size for the transformer model
+    head_size = 16  # size of the attention head for the transformer model
 
     torch.manual_seed(seed)
 
@@ -104,8 +107,19 @@ def main():
     logging.info(f"X batch: {x_batch}")
     logging.info(f"Y batch: {y_batch}")
 
-    bigram = BigramLanguageModel(tokenizer.vocabulary_size)
-    logits, loss = bigram(x_batch, y_batch)
+    if model == "bigram":
+        model = BigramLanguageModel(tokenizer.vocabulary_size)
+    elif model == "transformer":
+        model = TransformerModel(
+            vocab_size=tokenizer.vocabulary_size,
+            embed_size=embed_size,
+            block_size=block_size,
+            head_size=head_size,
+        )
+    else:
+        raise ValueError(f"Unknown model: {model}")
+
+    logits, loss = model(x_batch, y_batch)
     logging.info(f"Logits shape: {logits.shape}")
     # expected loss with no training is -log(1 / vocab_size)
     # -log(1 / 158) = 5.06259503303
@@ -113,19 +127,19 @@ def main():
 
     # Generate some text from the bigram model. Start with a single token "A".
     inputs = tokenizer(["A"], return_tensors="pt").reshape(1, 1)
-    new_tokens = bigram.generate(inputs, max_new_tokens=100)[0].tolist()
+    new_tokens = model.generate(inputs, max_new_tokens=100)[0].tolist()
     logging.info(f"Generated text: {tokenizer.decode(new_tokens)}")
 
-    optimizer = torch.optim.AdamW(bigram.parameters(), lr=learning_rate)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
 
     for step in range(train_iters):
         x_batch, y_batch = dataloaders["train"].get_batch()
-        logits, loss = bigram(x_batch, y_batch)
+        logits, loss = model(x_batch, y_batch)
         optimizer.zero_grad(set_to_none=True)
         loss.backward()
         optimizer.step()
         if step % eval_interval == 0:
-            losses = estimate_loss(bigram, dataloaders, eval_iters)
+            losses = estimate_loss(model, dataloaders, eval_iters)
             logging.info(
                 f"Step: {step:4d} Train Loss: {losses["train"]:.16f} "
                 f"Validation Loss: {losses["validation"]:.16f}"
@@ -133,9 +147,12 @@ def main():
 
     # Generate some text from the bigram model. Start with a single token "A".
     inputs = tokenizer(["A"], return_tensors="pt").reshape(1, 1)
-    new_tokens = bigram.generate(inputs, max_new_tokens=100)[0].tolist()
+    new_tokens = model.generate(inputs, max_new_tokens=100)[0].tolist()
     logging.info(tokenizer.decode(new_tokens))
 
 
 if __name__ == "__main__":
     main()
+
+# Train Loss: 2.4773683547973633 Validation Loss: 2.4583020210266113 - Bigram
+# Train Loss: 2.5519707202911377 Validation Loss: 2.5332398414611816 - Transformers Single Head

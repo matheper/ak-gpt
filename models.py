@@ -5,8 +5,89 @@ import torch.nn as nn
 from torch.nn import functional as F
 
 
+class AttentionHead(nn.Module):
+    def __init__(self, embed_size: int, block_size: int, head_size: int):
+        super().__init__()
+        self.key = nn.Linear(embed_size, head_size, bias=False)
+        self.query = nn.Linear(embed_size, head_size, bias=False)
+        self.value = nn.Linear(embed_size, head_size, bias=False)
+        self.register_buffer(
+            "tril", torch.tril(torch.ones(block_size, block_size))
+        )  # added to model's state_dict but not the model's parameters
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        b, t, c = x.shape
+        k = self.key(x)  # (B, T, C)
+        q = self.query(x)  # (B, T, C)
+        # (B, T, C) @ (B, C, T) -> (B, T, T)
+        weights = q @ k.transpose(-2, -1) * c**-0.5  # scaled dot-product
+        weights = weights.masked_fill(self.tril[:t, :t] == 0, float("-inf"))
+        weights = F.softmax(weights, dim=-1)  # (B, T, T)
+        v = self.value(x)  # (B, T, C)
+        out = weights @ v  # (B, T, T) @ (B, T, C) -> (B, T, C)
+        return out
+
+
+class TransformerModel(nn.Module):
+    def __init__(
+        self, vocab_size: int, embed_size: int, block_size: int, head_size: int
+    ):
+        """Language model based on the Transformer architecture.
+        The model predicts the next token given the current token.
+        B = batch size, T = block size, C = vocab size
+        """
+        super().__init__()
+        self.block_size = block_size
+        self.token_embedding = nn.Embedding(vocab_size, embed_size)
+        self.positional_embedding = nn.Embedding(block_size, embed_size)
+        self.attention_head = AttentionHead(embed_size, block_size, head_size)
+        self.linear = nn.Linear(head_size, vocab_size)
+
+    def forward(
+        self, idx: torch.Tensor, targets: torch.Tensor = None
+    ) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
+        b, t = idx.shape  # batch size, block size
+        token_embeddings = self.token_embedding(idx)  # (B, T, C)
+        position_embeddings = self.positional_embedding(
+            torch.arange(t, device="cpu")  # FIXME: parameterize device
+        )  # (T, C)
+        x = (
+            token_embeddings + position_embeddings
+        )  # (B, T, C) where C = embed size
+        x = self.attention_head(x)  # (B, T, C) where C = head size
+        logits = self.linear(x)  # (B, T, C) where C = vocab size
+
+        if targets is None:
+            loss = None
+        else:
+            b, t, c = logits.shape
+            logits = logits.view(b * t, c)
+            targets = targets.view(b * t)
+            loss = F.cross_entropy(logits, targets)
+        return logits, loss
+
+    def generate(self, idx: torch.Tensor, max_new_tokens: int) -> torch.Tensor:
+        # idx shape (B, T)
+        for _ in range(max_new_tokens):
+            idx_crop = idx[:, -self.block_size :]  # crop to block size
+            logits, loss = self(idx_crop)  # get the predictions
+            logits = logits[
+                :, -1, :
+            ]  # focus only on the last time step, becomes (B, C)
+            probs = F.softmax(
+                logits, dim=-1
+            )  # softmax to get probabilities, (B, C)
+            idx_next = torch.multinomial(
+                probs, num_samples=1
+            )  # sample from the distribution (B, 1)
+            idx = torch.cat(
+                (idx, idx_next), dim=1
+            )  # append sampled index to the running sequence, (B, T + 1)
+        return idx
+
+
 class BigramLanguageModel(nn.Module):
-    def __init__(self, vocab_size):
+    def __init__(self, vocab_size: int):
         """Simple bigram language model with a token embedding table.
         The model predicts the next token given the current token.
         B = batch size, T = block size, C = vocab size
