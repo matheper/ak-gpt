@@ -1,4 +1,6 @@
-from typing import List
+from typing import List, Optional, Union
+
+import torch
 
 
 class Tokenizer:
@@ -7,6 +9,13 @@ class Tokenizer:
         self.int_to_str = {}
         self.vocabulary = []
         self.vocabulary_size = 0
+
+    def __call__(
+        self, text: str, return_tensors: Optional[str] = None
+    ) -> Union[List[int], torch.Tensor]:
+        """Encode text using the tokenizer as a function: tokenizer("text")"""
+        encoded = self.encode(text=text, return_tensors=return_tensors)
+        return encoded
 
     def train(self, text: List[str]) -> None:
         """Train the tokenizer with a list of strings."""
@@ -29,14 +38,19 @@ class Tokenizer:
             tokens.append(char)
         return tokens
 
-    def encode(self, text: str) -> List[int]:
+    def encode(
+        self, text: str, return_tensors: Optional[str] = None
+    ) -> Union[List[int], torch.Tensor]:
         """Encode (including tokenization) a string into a list of integers.
-        If a single token is encoded, return the integer directly.
+        If return_tensors is "pt", return a PyTorch tensor.
+        If a single token is encoded, return scalar instead of list.
         """
         encoded_tokens = []
         for token in self.tokenize(text):
             encoded_token = self.str_to_int[token]
             encoded_tokens.append(encoded_token)
+        if return_tensors == "pt":
+            encoded_tokens = torch.tensor(encoded_tokens, dtype=torch.long)
         if len(encoded_tokens) == 1:
             encoded_tokens = encoded_tokens[0]
         return encoded_tokens

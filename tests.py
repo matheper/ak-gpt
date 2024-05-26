@@ -21,6 +21,16 @@ def test_encode_multiple_tokens(tokenizer):
     assert tokenizer.encode("abc") == [0, 1, 2]
 
 
+def test_encode_single_token_pytorch(tokenizer):
+    assert tokenizer.encode("a", return_tensors="pt") == torch.tensor(0)
+
+
+def test_encode_multiple_tokens_pytorch(tokenizer):
+    assert torch.equal(
+        tokenizer.encode("abc", return_tensors="pt"), torch.tensor([0, 1, 2])
+    )
+
+
 def test_encode_unknown_token(tokenizer):
     with pytest.raises(ValueError, match="Unknown token: x"):
         tokenizer.encode("xyz")
@@ -28,6 +38,10 @@ def test_encode_unknown_token(tokenizer):
 
 def test_encode_empty_string(tokenizer):
     assert tokenizer.encode("") == []
+
+
+def test_encode_call_magic_method(tokenizer):
+    assert tokenizer("a") == 0
 
 
 def test_decode_single_token(tokenizer):

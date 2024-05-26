@@ -47,7 +47,8 @@ def main(seed=42):
     logging.info(f"Decoded: {decoded}")
 
     # load the entire encoded dataset into a torch tensor
-    data = torch.tensor(tokenizer.encode(dataset), dtype=torch.long)
+    # data = torch.tensor(tokenizer.encode(dataset), dtype=torch.long)
+    data = tokenizer(dataset, return_tensors="pt")
     logging.info(f"Data shape: {data.shape}")
 
     # split dataset into train and validation
@@ -82,7 +83,7 @@ def main(seed=42):
     logging.info(f"Loss: {loss}")
 
     # Generate some text from the bigram model. Start with a single token "A".
-    inputs = torch.tensor([[tokenizer.encode("A")]], dtype=torch.long)
+    inputs = tokenizer(["A"], return_tensors="pt").reshape(1, 1)
     new_tokens = bigram.generate(inputs, max_new_tokens=100)[0].tolist()
     logging.info(f"Generated text: {tokenizer.decode(new_tokens)}")
 
@@ -102,7 +103,7 @@ def main(seed=42):
     logging.info(f"Final loss: {loss.item()}")
 
     # Generate some text from the bigram model. Start with a single token "A".
-    inputs = torch.tensor([[tokenizer.encode("A")]], dtype=torch.long)
+    inputs = tokenizer(["A"], return_tensors="pt").reshape(1, 1)
     new_tokens = bigram.generate(inputs, max_new_tokens=100)[0].tolist()
     logging.info(tokenizer.decode(new_tokens))
 
