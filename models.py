@@ -28,9 +28,23 @@ class AttentionHead(nn.Module):
         return out
 
 
+class MultiHeadAttention(nn.Module):
+    def __init__(self, embed_size: int, block_size: int, num_heads: int):
+        super().__init__()
+        self.heads = nn.ModuleList(
+            [
+                AttentionHead(embed_size, block_size, embed_size // num_heads)
+                for _ in range(num_heads)
+            ]
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return torch.cat([head(x) for head in self.heads], dim=-1)
+
+
 class TransformerModel(nn.Module):
     def __init__(
-        self, vocab_size: int, embed_size: int, block_size: int, head_size: int
+        self, vocab_size: int, embed_size: int, block_size: int, num_heads: int
     ):
         """Language model based on the Transformer architecture.
         The model predicts the next token given the current token.
@@ -40,21 +54,22 @@ class TransformerModel(nn.Module):
         self.block_size = block_size
         self.token_embedding = nn.Embedding(vocab_size, embed_size)
         self.positional_embedding = nn.Embedding(block_size, embed_size)
-        self.attention_head = AttentionHead(embed_size, block_size, head_size)
-        self.linear = nn.Linear(head_size, vocab_size)
+        self.attention_heads = MultiHeadAttention(
+            embed_size, block_size, num_heads
+        )
+        self.linear = nn.Linear(embed_size, vocab_size)
 
     def forward(
         self, idx: torch.Tensor, targets: torch.Tensor = None
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
         b, t = idx.shape  # batch size, block size
         token_embeddings = self.token_embedding(idx)  # (B, T, C)
-        position_embeddings = self.positional_embedding(
+        positional_embeddings = self.positional_embedding(
             torch.arange(t, device="cpu")  # FIXME: parameterize device
         )  # (T, C)
-        x = (
-            token_embeddings + position_embeddings
-        )  # (B, T, C) where C = embed size
-        x = self.attention_head(x)  # (B, T, C) where C = head size
+        # (B, T, C) where C = embed size
+        x = token_embeddings + positional_embeddings
+        x = self.attention_heads(x)  # (B, T, C) where C = head size
         logits = self.linear(x)  # (B, T, C) where C = vocab size
 
         if targets is None:

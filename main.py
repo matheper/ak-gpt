@@ -44,11 +44,11 @@ def main():
     batch_size = 4  # number of independent sequences processed in parallel
     block_size = 8  # number of tokens in each sequence
     learning_rate = 1e-2  # learning rate
-    train_iters = 5000  # number of training iterations
+    train_iters = 10000  # number of training iterations
     eval_interval = 100  # evaluate the model every 100 steps
     eval_iters = 100  # number of iterations to estimate the loss
     embed_size = 32  # embedding size for the transformer model
-    head_size = 16  # size of the attention head for the transformer model
+    num_heads = 4  # number of attention heads for the transformer model
 
     torch.manual_seed(seed)
 
@@ -114,7 +114,7 @@ def main():
             vocab_size=tokenizer.vocabulary_size,
             embed_size=embed_size,
             block_size=block_size,
-            head_size=head_size,
+            num_heads=num_heads,
         )
     else:
         raise ValueError(f"Unknown model: {model}")
@@ -156,3 +156,4 @@ if __name__ == "__main__":
 
 # Train Loss: 2.4773683547973633 Validation Loss: 2.4583020210266113 - Bigram
 # Train Loss: 2.5519707202911377 Validation Loss: 2.5332398414611816 - Transformers Single Head
+# Train Loss: 2.4278442859649658 Validation Loss: 2.4253225326538086 - Transformers 4 Multi Head
