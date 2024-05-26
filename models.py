@@ -49,9 +49,9 @@ class FeedForward(nn.Module):
     def __init__(self, embed_size: int):
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(embed_size, embed_size),
+            nn.Linear(embed_size, embed_size * 4),
             nn.ReLU(),
-            nn.Linear(embed_size, embed_size),
+            nn.Linear(embed_size * 4, embed_size),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
