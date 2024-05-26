@@ -157,3 +157,4 @@ if __name__ == "__main__":
 # Train Loss: 2.4773683547973633 Validation Loss: 2.4583020210266113 - Bigram
 # Train Loss: 2.5519707202911377 Validation Loss: 2.5332398414611816 - Transformers Single Head
 # Train Loss: 2.4278442859649658 Validation Loss: 2.4253225326538086 - Transformers 4 Multi Head
+# Train Loss: 2.4477648735046387 Validation Loss: 2.3981783390045166 - Transformers Multi Head + ff

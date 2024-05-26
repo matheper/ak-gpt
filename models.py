@@ -42,6 +42,18 @@ class MultiHeadAttention(nn.Module):
         return torch.cat([head(x) for head in self.heads], dim=-1)
 
 
+class FeedForward(nn.Module):
+    def __init__(self, embed_size: int):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(embed_size, embed_size),
+            nn.ReLU(),
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.net(x)
+
+
 class TransformerModel(nn.Module):
     def __init__(
         self, vocab_size: int, embed_size: int, block_size: int, num_heads: int
@@ -57,6 +69,7 @@ class TransformerModel(nn.Module):
         self.attention_heads = MultiHeadAttention(
             embed_size, block_size, num_heads
         )
+        self.feed_forward = FeedForward(embed_size)
         self.linear = nn.Linear(embed_size, vocab_size)
 
     def forward(
@@ -70,6 +83,7 @@ class TransformerModel(nn.Module):
         # (B, T, C) where C = embed size
         x = token_embeddings + positional_embeddings
         x = self.attention_heads(x)  # (B, T, C) where C = head size
+        x = self.feed_forward(x)
         logits = self.linear(x)  # (B, T, C) where C = vocab size
 
         if targets is None:
