@@ -65,10 +65,12 @@ class AttentionBlock(nn.Module):
             embed_size, block_size, num_heads
         )
         self.feed_forward = FeedForward(embed_size)
+        self.layernorm1 = nn.LayerNorm(embed_size)
+        self.layernorm2 = nn.LayerNorm(embed_size)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = x + self.attention_heads(x)
-        x = x + self.feed_forward(x)
+        x = x + self.attention_heads(self.layernorm1(x))
+        x = x + self.feed_forward(self.layernorm2(x))
         return x
 
 
