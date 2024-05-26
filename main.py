@@ -14,7 +14,9 @@ from tokenizer import Tokenizer
 logging.basicConfig(level=logging.INFO)
 
 
-def main():
+def main(seed=42):
+    torch.manual_seed(seed)
+
     # load a slice of wikipedia pt
     hf_dataset = load_hf_dataset(
         dataset="wikimedia/wikipedia",
@@ -54,10 +56,6 @@ def main():
     logging.info(f"Train shape: {train_data.shape}")
     logging.info(f"Validation shape: {val_data.shape}")
 
-    train_gen = torch.Generator()
-    train_gen.manual_seed(42)
-    val_gen = torch.Generator()
-    val_gen.manual_seed(42)
     batch_size = 4  # number of independent sequences processed in parallel
     block_size = 8  # number of tokens in each sequence
 
@@ -65,13 +63,11 @@ def main():
         train_data,
         batch_size=batch_size,
         block_size=block_size,
-        generator=train_gen,
     )
     val_dl = SimpleDataLoader(
         val_data,
         batch_size=batch_size,
         block_size=block_size,
-        generator=val_gen,
     )
 
     x_batch, y_batch = train_dl.get_batch()
@@ -85,15 +81,15 @@ def main():
     # -log(1 / 158) = 5.06259503303
     logging.info(f"Loss: {loss}")
 
-    # Generate some text from the bigram model. Start with a single token.
-    idx = torch.zeros((1, 1), dtype=torch.long)
-    new_tokens = bigram.generate(idx, max_new_tokens=100)[0].tolist()
+    # Generate some text from the bigram model. Start with a single token "A".
+    inputs = torch.tensor([[tokenizer.encode("A")]], dtype=torch.long)
+    new_tokens = bigram.generate(inputs, max_new_tokens=100)[0].tolist()
     logging.info(f"Generated text: {tokenizer.decode(new_tokens)}")
 
-    lr = 1e-3
+    lr = 1e-2
     optimizer = torch.optim.AdamW(bigram.parameters(), lr=lr)
 
-    steps = 1000
+    steps = 5000
 
     for step in range(steps):
         x_batch, y_batch = train_dl.get_batch()
@@ -105,9 +101,10 @@ def main():
             logging.info(f"Step: {step}, Loss: {loss.item()}")
     logging.info(f"Final loss: {loss.item()}")
 
-    idx = torch.zeros((1, 1), dtype=torch.long)
-    new_tokens = bigram.generate(idx, max_new_tokens=100)[0].tolist()
-    print(tokenizer.decode(new_tokens))
+    # Generate some text from the bigram model. Start with a single token "A".
+    inputs = torch.tensor([[tokenizer.encode("A")]], dtype=torch.long)
+    new_tokens = bigram.generate(inputs, max_new_tokens=100)[0].tolist()
+    logging.info(tokenizer.decode(new_tokens))
 
 
 if __name__ == "__main__":
