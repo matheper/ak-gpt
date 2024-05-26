@@ -48,6 +48,7 @@ def main():
     eval_interval = 100  # evaluate the model every 100 steps
     eval_iters = 100  # number of iterations to estimate the loss
     embed_size = 32  # embedding size for the transformer model
+    num_att_blocks = 4  # number of attention blocks for the transformer model
     num_heads = 4  # number of attention heads for the transformer model
 
     torch.manual_seed(seed)
@@ -114,6 +115,7 @@ def main():
             vocab_size=tokenizer.vocabulary_size,
             embed_size=embed_size,
             block_size=block_size,
+            num_att_blocks=num_att_blocks,
             num_heads=num_heads,
         )
     else:

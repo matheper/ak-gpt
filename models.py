@@ -54,9 +54,28 @@ class FeedForward(nn.Module):
         return self.net(x)
 
 
+class AttentionBlock(nn.Module):
+    def __init__(self, embed_size: int, block_size: int, num_heads: int):
+        super().__init__()
+        self.attention_heads = MultiHeadAttention(
+            embed_size, block_size, num_heads
+        )
+        self.feed_forward = FeedForward(embed_size)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = self.attention_heads(x)
+        x = self.feed_forward(x)
+        return x
+
+
 class TransformerModel(nn.Module):
     def __init__(
-        self, vocab_size: int, embed_size: int, block_size: int, num_heads: int
+        self,
+        vocab_size: int,
+        embed_size: int,
+        block_size: int,
+        num_att_blocks: int,
+        num_heads: int,
     ):
         """Language model based on the Transformer architecture.
         The model predicts the next token given the current token.
@@ -66,9 +85,11 @@ class TransformerModel(nn.Module):
         self.block_size = block_size
         self.token_embedding = nn.Embedding(vocab_size, embed_size)
         self.positional_embedding = nn.Embedding(block_size, embed_size)
-        self.attention_heads = MultiHeadAttention(
-            embed_size, block_size, num_heads
-        )
+        att_blocks = [
+            AttentionBlock(embed_size, block_size, num_heads)
+            for _ in range(num_att_blocks)
+        ]
+        self.attention_blocks = nn.Sequential(*att_blocks)
         self.feed_forward = FeedForward(embed_size)
         self.linear = nn.Linear(embed_size, vocab_size)
 
@@ -82,8 +103,7 @@ class TransformerModel(nn.Module):
         )  # (T, C)
         # (B, T, C) where C = embed size
         x = token_embeddings + positional_embeddings
-        x = self.attention_heads(x)  # (B, T, C) where C = head size
-        x = self.feed_forward(x)
+        x = self.attention_blocks(x)  # (B, T, C) where C = head size
         logits = self.linear(x)  # (B, T, C) where C = vocab size
 
         if targets is None:
