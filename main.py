@@ -10,6 +10,7 @@ from dataset import (
 )
 from models import BigramLanguageModel, TransformerModel
 from tokenizer import Tokenizer
+from utils import get_available_device
 
 logging.basicConfig(level=logging.INFO)
 
@@ -26,7 +27,7 @@ def estimate_loss(
     out = {}
     model.eval()
     for split, dataloader in dataloaders.items():
-        losses = torch.zeros(eval_iters)
+        losses = torch.zeros(eval_iters).to(get_available_device())
         for k in range(eval_iters):
             x_batch, y_batch = dataloader.get_batch()
             logits, loss = model(x_batch, y_batch)
@@ -123,6 +124,7 @@ def main():
     else:
         raise ValueError(f"Unknown model: {model}")
 
+    model.to(get_available_device())
     logits, loss = model(x_batch, y_batch)
     logging.info(f"Logits shape: {logits.shape}")
     # expected loss with no training is -log(1 / vocab_size)
@@ -148,6 +150,11 @@ def main():
                 f"Step: {step:4d} Train Loss: {losses["train"]:.16f} "
                 f"Validation Loss: {losses["validation"]:.16f}"
             )
+    losses = estimate_loss(model, dataloaders, eval_iters)
+    logging.info(
+        f"FinalLoss: Train Loss: {losses["train"]:.16f} "
+        f"Validation Loss: {losses["validation"]:.16f}"
+    )
 
     # Generate some text from the bigram model. Start with a single token "A".
     inputs = tokenizer(["A"], return_tensors="pt").reshape(1, 1)

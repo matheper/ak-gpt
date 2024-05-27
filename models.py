@@ -4,6 +4,8 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 
+from utils import get_available_device
+
 
 class AttentionHead(nn.Module):
     def __init__(
@@ -131,7 +133,7 @@ class TransformerModel(nn.Module):
         b, t = idx.shape  # batch size, block size
         token_embeddings = self.token_embedding(idx)  # (B, T, C)
         positional_embeddings = self.positional_embedding(
-            torch.arange(t, device="cpu")  # FIXME: parameterize device
+            torch.arange(t, device=get_available_device())
         )  # (T, C)
         # (B, T, C) where C = embed size
         x = token_embeddings + positional_embeddings

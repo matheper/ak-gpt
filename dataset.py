@@ -5,6 +5,8 @@ from typing import Any, Optional, Tuple
 import torch
 from datasets import Dataset, load_dataset
 
+from utils import get_available_device
+
 
 def _gen_from_iterable_dataset(iterable_ds):
     yield from iterable_ds
@@ -91,4 +93,4 @@ class SimpleDataLoader:
         y = torch.stack(
             [self.dataset[i + 1 : i + self.block_size + 1] for i in idx]
         )
-        return x, y
+        return x.to(get_available_device()), y.to(get_available_device())

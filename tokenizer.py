@@ -2,6 +2,8 @@ from typing import List, Optional, Union
 
 import torch
 
+from utils import get_available_device
+
 
 class Tokenizer:
     def __init__(self):
@@ -50,7 +52,9 @@ class Tokenizer:
             encoded_token = self.str_to_int[token]
             encoded_tokens.append(encoded_token)
         if return_tensors == "pt":
-            encoded_tokens = torch.tensor(encoded_tokens, dtype=torch.long)
+            encoded_tokens = torch.tensor(encoded_tokens, dtype=torch.long).to(
+                get_available_device()
+            )
         if len(encoded_tokens) == 1:
             encoded_tokens = encoded_tokens[0]
         return encoded_tokens
