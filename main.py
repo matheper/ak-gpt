@@ -42,13 +42,13 @@ def main():
     seed = 42  # random seed for reproducibility
     split_ratio = 0.9  # train/validation split ratio
     model = "transformer"  # model type: bigram or transformer
-    batch_size = 4  # number of independent sequences processed in parallel
-    block_size = 8  # number of tokens in each sequence
+    batch_size = 64  # number of independent sequences processed in parallel
+    block_size = 256  # number of tokens in each sequence
     learning_rate = 1e-2  # learning rate
-    train_iters = 20000  # number of training iterations
-    eval_interval = 100  # evaluate the model every 100 steps
+    train_iters = 5000  # number of training iterations
+    eval_interval = 500  # evaluate the model every N steps
     eval_iters = 100  # number of iterations to estimate the loss
-    embed_size = 32  # embedding size for the transformer model
+    embed_size = 128  # embedding size for the transformer model
     num_att_blocks = 4  # number of attention blocks for the transformer model
     num_heads = 4  # number of attention heads for the transformer model
     dropout = 0.2  # dropout rate for the transformer model
@@ -171,3 +171,4 @@ if __name__ == "__main__":
 # Train Loss: 2.4477648735046387 Validation Loss: 2.3981783390045166 - Transformers Multi Head + ff
 # Train Loss: 2.4489369392395020 Validation Loss: 2.3992874622344971 - Transformers Multi Head + ff + layernorm
 # Train Loss: 2.4482278823852539 Validation Loss: 2.4894003868103027 - Transformers Full
+# Train Loss: 1.4256139993667603 Validation Loss: 1.4729380607604980 - Transformers Full embed_size = 128, num_att_blocks = 4, num_heads = 4
